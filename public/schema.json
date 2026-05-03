@@ -1,0 +1,82 @@
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "name": "YAML Config Validator Pro",
+      "url": "https://yamlvalidator.pro",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Any",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "description": "Free online YAML validator, formatter, and converter with live syntax checking. Supports Kubernetes, Docker Compose, and GitHub Actions YAML files.",
+      "featureList": [
+        "Live YAML syntax validation with line and column error reporting",
+        "YAML to JSON and JSON to YAML conversion",
+        "YAML formatting and beautification",
+        "Kubernetes manifest validation",
+        "Docker Compose file validation",
+        "GitHub Actions workflow validation",
+        "Monaco Editor with syntax highlighting",
+        "Copy and download output"
+      ],
+      "softwareVersion": "1.0.0",
+      "author": {
+        "@type": "Organization",
+        "name": "YAML Config Validator Pro",
+        "url": "https://yamlvalidator.pro"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://yamlvalidator.pro/"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is YAML Config Validator Pro free to use?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, YAML Config Validator Pro is completely free to use. All validation, formatting, and conversion features are available without registration or payment."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does YAML Config Validator Pro support Kubernetes YAML files?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, we have a dedicated Kubernetes YAML validator at /validator/kubernetes/ that validates Kubernetes manifests including Deployments, Services, ConfigMaps, and Pods with live syntax checking."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I convert YAML to JSON and back?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, the Convert tab supports bidirectional conversion between YAML and JSON. You can switch between YAML to JSON and JSON to YAML modes instantly."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is my YAML data stored on your servers?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. All validation and conversion happens entirely in your browser. Your YAML data never leaves your device or is stored on any server."
+          }
+        }
+      ]
+    }
+  ]
+}
