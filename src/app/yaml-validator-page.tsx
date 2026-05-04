@@ -104,6 +104,14 @@ function useDebouncedCallback<T extends (text: string, tab: ToolTab, direction: 
 ) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+
   return useCallback(
     (text: string, tab: ToolTab, direction: ConvertDirection) => {
       if (timerRef.current) {
@@ -178,8 +186,7 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
   // Live render on input change (debounced)
   useEffect(() => {
     debouncedUpdate(input, activeTab, convertDirection);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [input]);
+  }, [input, activeTab, convertDirection, debouncedUpdate]);
 
   const handleCopy = async () => {
     if (!output) return;
@@ -196,7 +203,7 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
     a.href = url;
     a.download = activeTab === 'convert' && convertDirection === 'json-to-yaml' ? 'output.yaml' : 'output.json';
     if (activeTab === 'format') a.download = 'formatted.yaml';
-    if (activeTab === 'validate') a.download = 'parsed.json';
+    if (activeTab === 'validate') a.download = 'validation-result.json';
     a.click();
     URL.revokeObjectURL(url);
   };
