@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     title: "YAML Config Validator Pro",
     description: "Online YAML parser, formatter, and converter with live syntax checking. Validate Kubernetes, Docker Compose, and GitHub Actions YAML files.",
     type: "website",
-    url: "https://yamlvalidator.pro",
+    url: "https://www.yamlvalidator.pro",
     images: ["/og-image.png"],
   },
   twitter: {
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     images: ["/og-image.png"],
   },
   alternates: {
-    canonical: "https://yamlvalidator.pro/",
+    canonical: "https://www.yamlvalidator.pro/",
   },
 };
 

@@ -202,7 +202,12 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
   };
 
   const handleReset = () => {
-    setInput(SCENARIOS.default);
+    const scenarioKey = defaultScenario && SCENARIOS[defaultScenario] ? defaultScenario : 'default';
+    setInput(SCENARIOS[scenarioKey]);
+    setOutput('');
+    setValidation(null);
+    setFormatResult(null);
+    setConvertResult(null);
   };
 
   const statusBadge = (valid: boolean) => (
