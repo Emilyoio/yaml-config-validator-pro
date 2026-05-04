@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: 'export',
-  distDir: 'dist',
+  // 去掉 distDir: 'dist'，让 Vercel 使用默认的 'out' 目录
   images: {
     unoptimized: true,
   },
