@@ -2,9 +2,5 @@
   "version": 2,
   "name": "yaml-config-validator-pro",
   "framework": "nextjs",
-  "buildCommand": "npm run build",
-  "outputDirectory": "out",
-  "regions": [
-    "hkg1"
-  ]
+  "regions": ["hkg1"]
 }
