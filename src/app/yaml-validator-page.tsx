@@ -201,13 +201,23 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
     URL.revokeObjectURL(url);
   };
 
+  const inputEditorRef = useRef<unknown>(null);
+
+  const handleEditorMount = (editor: unknown) => {
+    inputEditorRef.current = editor;
+  };
+
   const handleReset = () => {
     const scenarioKey = defaultScenario && SCENARIOS[defaultScenario] ? defaultScenario : 'default';
-    setInput(SCENARIOS[scenarioKey]);
+    const newValue = SCENARIOS[scenarioKey];
+    setInput(newValue);
     setOutput('');
     setValidation(null);
     setFormatResult(null);
     setConvertResult(null);
+    if (inputEditorRef.current) {
+      (inputEditorRef.current as { setValue: (v: string) => void }).setValue(newValue);
+    }
   };
 
   const statusBadge = (valid: boolean) => (
@@ -385,6 +395,7 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
               language={inputMode}
               value={input}
               onChange={(value) => setInput(value || '')}
+              onMount={handleEditorMount}
               options={{
                 minimap: { enabled: false },
                 fontSize: 13,
