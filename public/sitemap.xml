@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://yamlvalidator.pro/</loc>
+    <loc>https://www.yamlvalidator.pro/</loc>
     <lastmod>2026-05-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://yamlvalidator.pro/validator/kubernetes/</loc>
+    <loc>https://www.yamlvalidator.pro/validator/kubernetes/</loc>
     <lastmod>2026-05-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://yamlvalidator.pro/validator/github-actions/</loc>
+    <loc>https://www.yamlvalidator.pro/validator/github-actions/</loc>
     <lastmod>2026-05-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://yamlvalidator.pro/validator/docker-compose/</loc>
+    <loc>https://www.yamlvalidator.pro/validator/docker-compose/</loc>
     <lastmod>2026-05-03</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

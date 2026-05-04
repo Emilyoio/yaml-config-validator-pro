@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     title: 'GitHub Actions YAML Validator — YAML Config Validator Pro',
     description: 'Validate GitHub Actions workflow YAML files with live syntax checking and precise error line numbers.',
     type: 'website',
-    url: 'https://yamlvalidator.pro/validator/github-actions/',
+    url: 'https://www.yamlvalidator.pro/validator/github-actions/',
   },
   twitter: {
     card: 'summary_large_image',
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     description: 'Validate GitHub Actions workflow YAML files with live syntax checking and precise error line numbers.',
   },
   alternates: {
-    canonical: 'https://yamlvalidator.pro/validator/github-actions/',
+    canonical: 'https://www.yamlvalidator.pro/validator/github-actions/',
   },
 };
 

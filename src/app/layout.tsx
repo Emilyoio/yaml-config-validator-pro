@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://yamlvalidator.pro"),
+  metadataBase: new URL("https://www.yamlvalidator.pro"),
   title: {
     default: "YAML Config Validator Pro — Online YAML Parser, Formatter & Converter",
     template: "%s — YAML Config Validator Pro",
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     "YAML lint",
     "YAML editor online",
   ],
-  authors: [{ name: "YAML Config Validator Pro", url: "https://yamlvalidator.pro" }],
+  authors: [{ name: "YAML Config Validator Pro", url: "https://www.yamlvalidator.pro" }],
   creator: "YAML Config Validator Pro",
   publisher: "YAML Config Validator Pro",
   robots: {
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     title: "YAML Config Validator Pro",
     description: "Online YAML parser, formatter, and converter with live syntax checking. Validate Kubernetes, Docker Compose, and GitHub Actions YAML files.",
     type: "website",
-    url: "https://yamlvalidator.pro",
+    url: "https://www.yamlvalidator.pro",
     siteName: "YAML Config Validator Pro",
     locale: "en_US",
     images: [
@@ -74,7 +74,7 @@ export const metadata: Metadata = {
     creator: "@yamlvalidator",
   },
   alternates: {
-    canonical: "https://yamlvalidator.pro/",
+    canonical: "https://www.yamlvalidator.pro/",
   },
   verification: {
     google: "YOUR_GOOGLE_SEARCH_CONSOLE_VERIFICATION_CODE",
@@ -89,9 +89,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
-      <head>
+      <body className="min-h-full flex flex-col bg-background text-foreground">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -101,7 +101,7 @@ export default function RootLayout({
                 {
                   "@type": "WebApplication",
                   "name": "YAML Config Validator Pro",
-                  "url": "https://yamlvalidator.pro",
+                  "url": "https://www.yamlvalidator.pro",
                   "applicationCategory": "DeveloperApplication",
                   "operatingSystem": "Any",
                   "offers": {
@@ -124,7 +124,7 @@ export default function RootLayout({
                   "author": {
                     "@type": "Organization",
                     "name": "YAML Config Validator Pro",
-                    "url": "https://yamlvalidator.pro",
+                    "url": "https://www.yamlvalidator.pro",
                   },
                 },
                 {
@@ -134,7 +134,7 @@ export default function RootLayout({
                       "@type": "ListItem",
                       "position": 1,
                       "name": "Home",
-                      "item": "https://yamlvalidator.pro/",
+                      "item": "https://www.yamlvalidator.pro/",
                     },
                   ],
                 },
@@ -142,8 +142,6 @@ export default function RootLayout({
             }),
           }}
         />
-      </head>
-      <body className="min-h-full flex flex-col bg-background text-foreground">
         {children}
       </body>
     </html>

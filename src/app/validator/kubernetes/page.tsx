@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     title: 'Kubernetes YAML Validator — YAML Config Validator Pro',
     description: 'Validate Kubernetes YAML manifests with live syntax checking and precise error line numbers.',
     type: 'website',
-    url: 'https://yamlvalidator.pro/validator/kubernetes/',
+    url: 'https://www.yamlvalidator.pro/validator/kubernetes/',
   },
   twitter: {
     card: 'summary_large_image',
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     description: 'Validate Kubernetes YAML manifests with live syntax checking and precise error line numbers.',
   },
   alternates: {
-    canonical: 'https://yamlvalidator.pro/validator/kubernetes/',
+    canonical: 'https://www.yamlvalidator.pro/validator/kubernetes/',
   },
 };
 

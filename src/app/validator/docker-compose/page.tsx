@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     title: 'Docker Compose YAML Validator — YAML Config Validator Pro',
     description: 'Validate Docker Compose YAML files with live syntax checking and precise error line numbers.',
     type: 'website',
-    url: 'https://yamlvalidator.pro/validator/docker-compose/',
+    url: 'https://www.yamlvalidator.pro/validator/docker-compose/',
   },
   twitter: {
     card: 'summary_large_image',
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     description: 'Validate Docker Compose YAML files with live syntax checking and precise error line numbers.',
   },
   alternates: {
-    canonical: 'https://yamlvalidator.pro/validator/docker-compose/',
+    canonical: 'https://www.yamlvalidator.pro/validator/docker-compose/',
   },
 };
 
