@@ -165,6 +165,10 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
   }, []);
 
   const runConvert = useCallback((text: string, direction: ConvertDirection) => {
+    if (monaco && editorRef.current) {
+      const model = editorRef.current.getModel();
+      if (model) monaco.editor.setModelMarkers(model, 'yaml-validator', []);
+    }
     const result =
       direction === 'yaml-to-json'
         ? yamlToJson(text)
@@ -172,10 +176,27 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
     setConvertResult(result);
     if (result.valid) {
       setOutput(result.output);
+      if(direction === 'yaml-to-json') {
+          try {
+              const validationResult = validateYaml(text);
+              setValidation(validationResult);
+          } catch(e) {
+              setValidation({ valid: false, errors: [], data: null });
+          }
+      } else {
+          try {
+            setValidation({ valid: true, errors: [], data: JSON.parse(text) });
+          } catch (e) {
+            setValidation({ valid: false, errors: [], data: null });
+          }
+          setOutputView('raw');
+      }
     } else {
       setOutput('');
+      setOutputView('raw');
+      setValidation({ valid: false, errors: [], data: null });
     }
-  }, []);
+  }, [monaco]);
 
   const processInput = useCallback((text: string, tab: ToolTab, direction: ConvertDirection) => {
     if (tab === 'validate') runValidation(text);
