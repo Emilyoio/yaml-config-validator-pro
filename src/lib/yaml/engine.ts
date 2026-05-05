@@ -15,8 +15,8 @@ export function validateYaml(input: string): ValidationResult {
       const mark = err.mark;
       errors.push({
         message: err.message,
-        line: mark?.line ? mark.line + 1 : undefined,
-        column: mark?.column ? mark.column + 1 : undefined,
+        line: mark?.line !== undefined ? mark.line + 1 : undefined,
+        column: mark?.column !== undefined ? mark.column + 1 : undefined,
         reason: err.reason,
       });
     } else {

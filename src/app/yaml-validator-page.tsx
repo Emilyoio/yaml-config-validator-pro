@@ -2,6 +2,8 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
+import TreeView from '@/components/tree-view';
+import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { validateYaml, formatYaml, yamlToJson, jsonToYaml } from '@/lib/yaml/engine';
 import type { ValidationResult, FormatResult, ConvertResult, EditorMode } from '@/lib/yaml/types';
 import { Button } from '@/components/ui/button';
@@ -24,6 +26,26 @@ import {
 
 type ToolTab = 'validate' | 'format' | 'convert';
 type ConvertDirection = 'yaml-to-json' | 'json-to-yaml';
+type OutputView = 'raw' | 'tree';
+
+type MonacoEditorRef = {
+  getModel: () => unknown;
+  setValue: (value: string) => void;
+};
+
+type MonacoApiRef = {
+  editor: {
+    setModelMarkers: (model: unknown, owner: string, markers: Array<{
+      severity: number;
+      message: string;
+      startLineNumber: number;
+      startColumn: number;
+      endLineNumber: number;
+      endColumn: number;
+    }>) => void;
+  };
+  MarkerSeverity?: { Error: number };
+};
 
 const SCENARIOS: Record<string, string> = {
   default: `name: example-app
@@ -138,21 +160,53 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
   const [formatResult, setFormatResult] = useState<FormatResult | null>(null);
   const [convertResult, setConvertResult] = useState<ConvertResult | null>(null);
   const [copied, setCopied] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
   const [isDark, setIsDark] = useState(true);
+  const [outputView, setOutputView] = useState<OutputView>('raw');
+  const editorRef = useRef<MonacoEditorRef | null>(null);
+  const [monaco, setMonaco] = useState<MonacoApiRef | null>(null);
 
   const inputMode: EditorMode = activeTab === 'convert' && convertDirection === 'json-to-yaml' ? 'json' : 'yaml';
   const outputMode: EditorMode = activeTab === 'convert' && convertDirection === 'yaml-to-json' ? 'json' : 'yaml';
+
+  const applyValidationMarkers = useCallback((result: ValidationResult) => {
+    if (!monaco || !editorRef.current) return;
+    const model = editorRef.current.getModel();
+    if (!model) return;
+    const severity = monaco.MarkerSeverity?.Error ?? 8;
+    const markers = result.valid
+      ? []
+      : result.errors.map((err) => {
+          const line = err.line ?? 1;
+          const column = err.column ?? 1;
+          return {
+            severity,
+            message: err.reason || err.message,
+            startLineNumber: line,
+            startColumn: column,
+            endLineNumber: line,
+            endColumn: column + 1,
+          };
+        });
+    monaco.editor.setModelMarkers(model, 'yaml-validator', markers);
+  }, [monaco]);
+
+  const handleEditorMount = useCallback((editor: MonacoEditorRef, monacoInstance: MonacoApiRef) => {
+    editorRef.current = editor;
+    setMonaco(monacoInstance);
+  }, []);
 
   // Live processing functions
   const runValidation = useCallback((text: string) => {
     const result = validateYaml(text);
     setValidation(result);
+    applyValidationMarkers(result);
     if (result.valid && result.data) {
       setOutput(JSON.stringify(result.data, null, 2));
     } else {
       setOutput('');
     }
-  }, []);
+  }, [applyValidationMarkers]);
 
   const runFormat = useCallback((text: string) => {
     const result = formatYaml(text);
@@ -180,13 +234,13 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
           try {
               const validationResult = validateYaml(text);
               setValidation(validationResult);
-          } catch(e) {
+          } catch {
               setValidation({ valid: false, errors: [], data: null });
           }
       } else {
           try {
             setValidation({ valid: true, errors: [], data: JSON.parse(text) });
-          } catch (e) {
+          } catch {
             setValidation({ valid: false, errors: [], data: null });
           }
           setOutputView('raw');
@@ -220,11 +274,28 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
     debouncedUpdate(input, activeTab, convertDirection);
   }, [input, activeTab, convertDirection, debouncedUpdate]);
 
+  const { isDragging, handleDragEnter, handleDragLeave, handleDragOver, handleDrop } = useDragAndDrop(
+    (content) => {
+      setInput(content);
+      editorRef.current?.setValue(content);
+      setStatusMessage('File loaded into editor');
+      setTimeout(() => setStatusMessage(''), 1800);
+    },
+    () => {
+      setStatusMessage('Drop a .yaml, .yml, or .json file');
+      setTimeout(() => setStatusMessage(''), 2200);
+    }
+  );
+
   const handleCopy = async () => {
     if (!output) return;
     await navigator.clipboard.writeText(output);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    setStatusMessage('Output copied to clipboard');
+    setTimeout(() => {
+      setCopied(false);
+      setStatusMessage('');
+    }, 1500);
   };
 
   const handleDownload = () => {
@@ -238,10 +309,26 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
     if (activeTab === 'validate') a.download = 'validation-result.json';
     a.click();
     URL.revokeObjectURL(url);
+    setStatusMessage(`Downloaded ${a.download}`);
+    setTimeout(() => setStatusMessage(''), 1800);
   };
 
   const handleReset = () => {
-    setInput(SCENARIOS.default);
+    const scenarioKey = defaultScenario && SCENARIOS[defaultScenario] ? defaultScenario : 'default';
+    const newValue = SCENARIOS[scenarioKey];
+    setInput(newValue);
+    editorRef.current?.setValue(newValue);
+    setOutput('');
+    setValidation(null);
+    setFormatResult(null);
+    setConvertResult(null);
+    setOutputView('raw');
+    if (monaco && editorRef.current) {
+      const model = editorRef.current.getModel();
+      if (model) monaco.editor.setModelMarkers(model, 'yaml-validator', []);
+    }
+    setStatusMessage('Editor reset');
+    setTimeout(() => setStatusMessage(''), 1500);
   };
 
   const statusBadge = (valid: boolean) => (
@@ -278,7 +365,15 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
       <Hero />
 
       {/* Editor Section */}
-      <div id="editor" className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
+      <div
+        id="editor"
+        className={`relative flex flex-col ${isDragging ? 'ring-2 ring-emerald-400 ring-offset-0' : ''}`}
+        style={{ height: 'calc(100vh - 64px)' }}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
         {/* Header */}
         <header className={`border-b px-4 py-3 flex items-center justify-between ${headerBg}`}>
           <div className="flex items-center gap-2.5">
@@ -387,6 +482,18 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
           </div>
         </div>
 
+        {statusMessage && (
+          <div className="absolute right-4 top-[92px] z-20 rounded-lg border border-emerald-500/25 bg-emerald-950/90 px-3 py-2 text-xs text-emerald-100 shadow-lg shadow-emerald-950/30">
+            {statusMessage}
+          </div>
+        )}
+
+        {isDragging && (
+          <div className="pointer-events-none absolute inset-3 z-10 flex items-center justify-center rounded-2xl border border-dashed border-emerald-400/70 bg-emerald-950/55 text-sm font-medium text-emerald-100 backdrop-blur-sm">
+            Drop a YAML or JSON file to load it into the editor
+          </div>
+        )}
+
         {/* Main Content — Split Screen */}
         <div className="flex flex-1 overflow-hidden">
           {/* Input Panel */}
@@ -403,6 +510,7 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
                 language={inputMode}
                 value={input}
                 onChange={(value) => setInput(value || '')}
+                onMount={handleEditorMount}
                 options={{
                   minimap: { enabled: false },
                   fontSize: 13,
@@ -437,10 +545,29 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
               <span className={`text-xs font-medium ${textMuted}`}>
                 {activeTab === 'validate' ? 'Parsed Result (JSON)' : activeTab === 'format' ? 'Formatted YAML' : outputMode === 'json' ? 'JSON Output' : 'YAML Output'}
               </span>
-              <span className={`text-xs ${textMuted}`}>{output.length} chars</span>
+              <div className="flex items-center gap-2">
+                {activeTab === 'validate' && validation?.valid && validation.data !== null && validation.data !== undefined && (
+                  <div className={`flex items-center rounded-md border p-0.5 ${isDark ? 'border-[#30363d] bg-[#161b22]' : 'border-gray-200 bg-white'}`}>
+                    {(['raw', 'tree'] as OutputView[]).map((view) => (
+                      <button
+                        key={view}
+                        onClick={() => setOutputView(view)}
+                        className={`rounded px-2 py-0.5 text-[11px] font-medium transition-all ${
+                          outputView === view ? activeTabBg : inactiveTabBg
+                        }`}
+                      >
+                        {view === 'raw' ? 'Raw' : 'Tree'}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <span className={`text-xs ${textMuted}`}>{output.length} chars</span>
+              </div>
             </div>
             <div className="relative flex-1 min-h-0">
-              {output ? (
+              {output && outputView === 'tree' && activeTab === 'validate' && validation?.valid ? (
+                <TreeView data={(validation.data && typeof validation.data === 'object') ? validation.data as Record<string, unknown> : null} isDark={isDark} />
+              ) : output ? (
                 <Editor
                   height="100%"
                   language={outputMode}

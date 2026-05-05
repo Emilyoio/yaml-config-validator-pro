@@ -1,16 +1,16 @@
-node_modules
-.next
-out
-dist
-.vercel
-*.log
+# Local recovery / deployment helper artifacts
 *.orig
 *.rej
 *.md5
-tsconfig.tsbuildinfo
 cron_deploy.sh
 deploy_once.sh
 deploy_watcher*.sh
 deploy_watcher*.out
 start_deploy_watcher*.sh
 start_cron_watcher.sh
+
+# Build / cache artifacts
+.next
+node_modules
+tsconfig.tsbuildinfo
+*.log
