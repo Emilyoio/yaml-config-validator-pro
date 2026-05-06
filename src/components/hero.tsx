@@ -40,12 +40,12 @@ export default function Hero() {
           {/* Description */}
           <p className="mt-4 max-w-[65ch] text-base leading-relaxed text-[#8b949e]">
             Validate Kubernetes, Docker Compose, and GitHub Actions YAML files
-            with live syntax checking. No sign-up required.
+            with live syntax checking. Your YAML stays in your browser — no sign-up required.
           </p>
 
           {/* Mini feature pills */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5">
-            {['Validate', 'Format', 'Convert', 'AI Fix'].map((label) => (
+            {['Validate', 'Format', 'Convert', 'Local-first', 'AI Fix'].map((label) => (
               <span
                 key={label}
                 className="inline-flex items-center rounded-full border border-[#30363d] bg-[#161b22] px-3.5 py-1.5 text-xs font-medium text-[#8b949e]"

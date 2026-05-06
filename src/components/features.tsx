@@ -5,8 +5,8 @@ import {
   Zap,
   ArrowLeftRight,
   LayoutTemplate,
-  Moon,
   ClipboardCopy,
+  ShieldCheck,
   Bot,
 } from 'lucide-react';
 
@@ -27,9 +27,9 @@ const FEATURES = [
     description: 'Pre-loaded presets for Kubernetes, Docker Compose, and GitHub Actions. Start from a real-world example.',
   },
   {
-    icon: Moon,
-    title: 'Dark Mode',
-    description: 'GitHub Dark-inspired theme that is easy on the eyes during long config editing sessions.',
+    icon: ShieldCheck,
+    title: 'Browser-Local Processing',
+    description: 'Your YAML and JSON stay in your browser for core validation, formatting, conversion, and Tree View inspection.',
   },
   {
     icon: ClipboardCopy,

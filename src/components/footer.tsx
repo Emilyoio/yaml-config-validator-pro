@@ -20,19 +20,19 @@ export default function Footer() {
           {/* Links */}
           <div className="flex items-center gap-6">
             <a
-              href="#"
+              href="/privacy/"
               className="text-xs text-[#8b949e] transition-colors hover:text-[#c9d1d9]"
             >
               Privacy Policy
             </a>
             <a
-              href="#"
+              href="/terms/"
               className="text-xs text-[#8b949e] transition-colors hover:text-[#c9d1d9]"
             >
               Terms of Service
             </a>
             <a
-              href="#"
+              href="/privacy/#contact"
               className="text-xs text-[#8b949e] transition-colors hover:text-[#c9d1d9]"
             >
               Contact

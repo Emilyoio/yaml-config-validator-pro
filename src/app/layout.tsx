@@ -12,6 +12,15 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+function stringifyJsonLd(data: unknown) {
+  return JSON.stringify(data)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.yamlvalidator.pro"),
   title: {
@@ -76,9 +85,6 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://www.yamlvalidator.pro/",
   },
-  verification: {
-    google: "YOUR_GOOGLE_SEARCH_CONSOLE_VERIFICATION_CODE",
-  },
 };
 
 export default function RootLayout({
@@ -95,7 +101,7 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: stringifyJsonLd({
               "@context": "https://schema.org",
               "@graph": [
                 {
