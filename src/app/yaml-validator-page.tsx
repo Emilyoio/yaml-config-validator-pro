@@ -9,6 +9,7 @@ import type { ValidationResult, FormatResult, ConvertResult, EditorMode } from '
 import { Button } from '@/components/ui/button';
 import Hero from '@/components/hero';
 import Features from '@/components/features';
+import ScenarioSeoContent from '@/components/scenario-seo-content';
 import FAQ from '@/components/faq';
 import Footer from '@/components/footer';
 import {
@@ -201,7 +202,7 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
     const result = validateYaml(text);
     setValidation(result);
     applyValidationMarkers(result);
-    if (result.valid && result.data) {
+    if (result.valid && result.data !== null && result.data !== undefined) {
       setOutput(JSON.stringify(result.data, null, 2));
     } else {
       setOutput('');
@@ -566,7 +567,7 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
             </div>
             <div className="relative flex-1 min-h-0">
               {output && outputView === 'tree' && activeTab === 'validate' && validation?.valid ? (
-                <TreeView data={(validation.data && typeof validation.data === 'object') ? validation.data as Record<string, unknown> : null} isDark={isDark} />
+                <TreeView data={validation.data} isDark={isDark} />
               ) : output ? (
                 <Editor
                   height="100%"
@@ -617,8 +618,8 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
             <ul className="mt-2 space-y-1.5">
               {validation.errors.map((err, idx) => (
                 <li key={idx} className={`text-xs ${errorText}`}>
-                  {err.line && <span className="font-mono font-medium">Line {err.line}</span>}
-                  {err.column && <span className="font-mono font-medium">, Col {err.column}</span>}
+                  {err.line !== undefined && <span className="font-mono font-medium">Line {err.line}</span>}
+                  {err.column !== undefined && <span className="font-mono font-medium">, Col {err.column}</span>}
                   {': '}
                   {err.message}
                 </li>
@@ -650,6 +651,9 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
 
       {/* Features */}
       <Features />
+
+      {/* Scenario SEO content */}
+      <ScenarioSeoContent scenario={defaultScenario} />
 
       {/* FAQ */}
       <FAQ />

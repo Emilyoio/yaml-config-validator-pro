@@ -1,7 +1,7 @@
 'use client';
 
 interface TreeViewProps {
-  data: Record<string, unknown> | unknown[] | null;
+  data: unknown;
   isDark: boolean;
 }
 
@@ -48,7 +48,7 @@ function TreeNode({ name, value, depth = 0 }: { name: string; value: unknown; de
 }
 
 export default function TreeView({ data, isDark }: TreeViewProps) {
-  if (!data) {
+  if (data === null || data === undefined) {
     return (
       <div className="flex h-full items-center justify-center text-xs text-[#8b949e]">
         No valid data to display in Tree View.
@@ -58,14 +58,16 @@ export default function TreeView({ data, isDark }: TreeViewProps) {
 
   const entries = Array.isArray(data)
     ? data.map((item, index) => [String(index), item] as const)
-    : Object.entries(data);
+    : isRecord(data)
+      ? Object.entries(data)
+      : [['value', data]] as const;
 
   return (
     <div className={`h-full overflow-auto p-4 ${isDark ? 'bg-[#0d1117]' : 'bg-gray-50'}`}>
       <div className={`rounded-xl border p-4 ${isDark ? 'border-[#30363d] bg-[#161b22]' : 'border-gray-200 bg-white'}`}>
         <div className="mb-3 flex items-center justify-between border-b border-[#30363d] pb-2 text-xs">
           <span className="font-semibold text-[#c9d1d9]">Parsed tree</span>
-          <span className="text-[#8b949e]">{entries.length} root keys</span>
+          <span className="text-[#8b949e]">{entries.length} root entries</span>
         </div>
         {entries.map(([name, value]) => (
           <TreeNode key={name} name={name} value={value} />
