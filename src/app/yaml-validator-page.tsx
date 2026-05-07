@@ -18,6 +18,8 @@ import {
   AlertTriangle,
   FileCode2,
   Copy,
+  Link2,
+  Upload,
   Download,
   RotateCcw,
   Moon,
@@ -161,14 +163,28 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
   const [formatResult, setFormatResult] = useState<FormatResult | null>(null);
   const [convertResult, setConvertResult] = useState<ConvertResult | null>(null);
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [isLoadingRemote, setIsLoadingRemote] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [isDark, setIsDark] = useState(true);
   const [outputView, setOutputView] = useState<OutputView>('raw');
   const editorRef = useRef<MonacoEditorRef | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const hasLoadedSharedInputRef = useRef(false);
   const [monaco, setMonaco] = useState<MonacoApiRef | null>(null);
 
   const inputMode: EditorMode = activeTab === 'convert' && convertDirection === 'json-to-yaml' ? 'json' : 'yaml';
   const outputMode: EditorMode = activeTab === 'convert' && convertDirection === 'yaml-to-json' ? 'json' : 'yaml';
+
+
+  const loadContentIntoEditor = useCallback((content: string, message: string) => {
+    setInput(content);
+    editorRef.current?.setValue(content);
+    setActiveTab('validate');
+    setOutputView('raw');
+    setStatusMessage(message);
+    setTimeout(() => setStatusMessage(''), 2200);
+  }, []);
 
   const applyValidationMarkers = useCallback((result: ValidationResult) => {
     if (!monaco || !editorRef.current) return;
@@ -262,6 +278,45 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
   // Debounced live update to prevent editor freeze
   const debouncedUpdate = useDebouncedCallback(processInput, 300);
 
+  // Load shared YAML from #yaml=... or remote content from ?url=...
+  useEffect(() => {
+    if (hasLoadedSharedInputRef.current || typeof window === 'undefined') return;
+    hasLoadedSharedInputRef.current = true;
+
+    const id = window.setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      const remoteUrl = params.get('url');
+      const yamlHash = window.location.hash.startsWith('#')
+        ? new URLSearchParams(window.location.hash.slice(1)).get('yaml')
+        : null;
+
+      if (remoteUrl) {
+        setIsLoadingRemote(true);
+        setStatusMessage('Loading YAML from URL...');
+        fetch(`/api/load-url?url=${encodeURIComponent(remoteUrl)}`)
+          .then(async (response) => {
+            const payload = await response.json().catch(() => null);
+            if (!response.ok || !payload?.content) {
+              throw new Error(payload?.error || 'Unable to load remote YAML');
+            }
+            loadContentIntoEditor(payload.content, `Loaded remote YAML from ${new URL(remoteUrl).hostname}`);
+          })
+          .catch((error) => {
+            setStatusMessage(error instanceof Error ? error.message : 'Unable to load remote YAML');
+            setTimeout(() => setStatusMessage(''), 3200);
+          })
+          .finally(() => setIsLoadingRemote(false));
+        return;
+      }
+
+      if (yamlHash) {
+        loadContentIntoEditor(yamlHash, 'Loaded YAML from shared link');
+      }
+    }, 0);
+
+    return () => window.clearTimeout(id);
+  }, [loadContentIntoEditor]);
+
   // Immediate update on tab/direction change
   useEffect(() => {
     const id = setTimeout(() => {
@@ -277,16 +332,54 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
 
   const { isDragging, handleDragEnter, handleDragLeave, handleDragOver, handleDrop } = useDragAndDrop(
     (content) => {
-      setInput(content);
-      editorRef.current?.setValue(content);
-      setStatusMessage('File loaded into editor');
-      setTimeout(() => setStatusMessage(''), 1800);
+      loadContentIntoEditor(content, 'File loaded into editor');
     },
     () => {
       setStatusMessage('Drop a .yaml, .yml, or .json file');
       setTimeout(() => setStatusMessage(''), 2200);
     }
   );
+
+  const handleOpenFile = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!file.name.endsWith('.yml') && !file.name.endsWith('.yaml') && !file.name.endsWith('.json')) {
+      setStatusMessage('Choose a .yaml, .yml, or .json file');
+      setTimeout(() => setStatusMessage(''), 2200);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const content = loadEvent.target?.result;
+      if (typeof content === 'string') {
+        loadContentIntoEditor(content, `Opened ${file.name}`);
+      }
+    };
+    reader.onerror = () => {
+      setStatusMessage('Unable to read selected file');
+      setTimeout(() => setStatusMessage(''), 2200);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleCopyLink = async () => {
+    const shareUrl = new URL(window.location.href);
+    shareUrl.search = '';
+    shareUrl.hash = `yaml=${encodeURIComponent(input)}`;
+    await navigator.clipboard.writeText(shareUrl.toString());
+    window.history.replaceState(null, '', shareUrl.toString());
+    setLinkCopied(true);
+    setStatusMessage('Share link copied to clipboard');
+    setTimeout(() => {
+      setLinkCopied(false);
+      setStatusMessage('');
+    }, 1800);
+  };
 
   const handleCopy = async () => {
     if (!output) return;
@@ -375,6 +468,14 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".yaml,.yml,.json,application/x-yaml,text/yaml,application/json"
+          className="hidden"
+          onChange={handleFileInputChange}
+        />
+
         {/* Header */}
         <header className={`border-b px-4 py-3 flex items-center justify-between ${headerBg}`}>
           <div className="flex items-center gap-2.5">
@@ -445,12 +546,30 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
             {activeTab === 'validate' && validation && statusBadge(validation.valid)}
             {activeTab === 'format' && formatResult && statusBadge(formatResult.valid)}
             {activeTab === 'convert' && convertResult && statusBadge(convertResult.valid)}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleOpenFile}
+              className={`h-7 gap-1 text-xs ${isDark ? 'text-[#8b949e] hover:bg-[#21262d] hover:text-[#c9d1d9]' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}
+            >
+              <Upload className="h-3.5 w-3.5" />
+              Open File
+            </Button>
             <div className={`flex items-center gap-1 text-xs ${textMuted}`}>
               <SplitSquareHorizontal className="h-3.5 w-3.5" />
-              <span>Live</span>
+              <span>{isLoadingRemote ? 'Loading URL' : 'Live'}</span>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCopyLink}
+              className={`h-7 gap-1 text-xs ${isDark ? 'text-[#8b949e] hover:bg-[#21262d] hover:text-[#c9d1d9]' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}
+            >
+              <Link2 className="h-3.5 w-3.5" />
+              {linkCopied ? 'Link Copied!' : 'Copy Link'}
+            </Button>
             <Button
               variant="ghost"
               size="sm"

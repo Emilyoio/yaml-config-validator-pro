@@ -105,11 +105,14 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@graph": [
                 {
-                  "@type": "WebApplication",
+                  "@type": ["WebApplication", "SoftwareApplication"],
                   "name": "YAML Config Validator Pro",
                   "url": "https://www.yamlvalidator.pro",
                   "applicationCategory": "DeveloperApplication",
+                  "applicationSubCategory": "YAML validator, formatter, and converter",
                   "operatingSystem": "Any",
+                  "browserRequirements": "Requires JavaScript. Runs in modern desktop and mobile browsers.",
+                  "isAccessibleForFree": true,
                   "offers": {
                     "@type": "Offer",
                     "price": "0",
@@ -120,13 +123,16 @@ export default function RootLayout({
                     "Live YAML syntax validation with line and column error reporting",
                     "YAML to JSON and JSON to YAML conversion",
                     "YAML formatting and beautification",
+                    "Load YAML from public URLs with ?url=",
+                    "Open local .yaml, .yml, and .json files",
+                    "Copy shareable links with YAML content encoded in the URL hash",
                     "Kubernetes manifest validation",
                     "Docker Compose file validation",
                     "GitHub Actions workflow validation",
                     "Monaco Editor with syntax highlighting",
                     "Copy and download output",
                   ],
-                  "softwareVersion": "1.0.0",
+                  "softwareVersion": "1.1.0",
                   "author": {
                     "@type": "Organization",
                     "name": "YAML Config Validator Pro",

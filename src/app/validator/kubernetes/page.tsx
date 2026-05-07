@@ -60,6 +60,22 @@ export default function Page() {
         isPartOf: { '@type': 'WebSite', name: 'YAML Config Validator Pro', url: 'https://www.yamlvalidator.pro/' },
       },
       {
+        '@type': 'SoftwareApplication',
+        name: 'Kubernetes YAML Validator',
+        url: canonical,
+        applicationCategory: 'DeveloperApplication',
+        operatingSystem: 'Any',
+        isAccessibleForFree: true,
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+        featureList: [
+          'Live YAML syntax validation',
+          'Public URL loading with ?url=',
+          'Open local YAML files',
+          'Copy shareable YAML links',
+          'Tree View parsed structure inspection',
+        ],
+      },
+      {
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.yamlvalidator.pro/' },
