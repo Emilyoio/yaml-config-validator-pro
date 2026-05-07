@@ -408,10 +408,8 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
   };
 
   const handleReset = () => {
-    const scenarioKey = defaultScenario && SCENARIOS[defaultScenario] ? defaultScenario : 'default';
-    const newValue = SCENARIOS[scenarioKey];
-    setInput(newValue);
-    editorRef.current?.setValue(newValue);
+    setInput('');
+    editorRef.current?.setValue('');
     setOutput('');
     setValidation(null);
     setFormatResult(null);
@@ -421,7 +419,7 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
       const model = editorRef.current.getModel();
       if (model) monaco.editor.setModelMarkers(model, 'yaml-validator', []);
     }
-    setStatusMessage('Editor reset');
+    setStatusMessage('Editor cleared');
     setTimeout(() => setStatusMessage(''), 1500);
   };
 
