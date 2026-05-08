@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import TreeView from '@/components/tree-view';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
+import { trackEvent } from '@/lib/analytics';
 import { validateYaml, formatYaml, yamlToJson, jsonToYaml } from '@/lib/yaml/engine';
 import type { ValidationResult, FormatResult, ConvertResult, EditorMode } from '@/lib/yaml/types';
 import { Button } from '@/components/ui/button';
@@ -171,6 +172,7 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
   const editorRef = useRef<MonacoEditorRef | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const hasLoadedSharedInputRef = useRef(false);
+  const lastValidationEventRef = useRef<string | null>(null);
   const [monaco, setMonaco] = useState<MonacoApiRef | null>(null);
 
   const inputMode: EditorMode = activeTab === 'convert' && convertDirection === 'json-to-yaml' ? 'json' : 'yaml';
@@ -218,6 +220,15 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
     const result = validateYaml(text);
     setValidation(result);
     applyValidationMarkers(result);
+    const eventKey = `validate:${result.valid}:${result.errors[0]?.message ?? ''}:${text.length}`;
+    if (text.trim() && lastValidationEventRef.current !== eventKey) {
+      lastValidationEventRef.current = eventKey;
+      trackEvent(result.valid ? 'validate_success' : 'validate_error', {
+        input_chars: text.length,
+        error_count: result.valid ? 0 : result.errors.length,
+        tool_tab: 'validate',
+      });
+    }
     if (result.valid && result.data !== null && result.data !== undefined) {
       setOutput(JSON.stringify(result.data, null, 2));
     } else {
@@ -230,8 +241,17 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
     setFormatResult(result);
     if (result.valid) {
       setOutput(result.formatted);
+      trackEvent('format_success', {
+        input_chars: text.length,
+        output_chars: result.formatted.length,
+        tool_tab: 'format',
+      });
     } else {
       setOutput('');
+      trackEvent('format_error', {
+        input_chars: text.length,
+        tool_tab: 'format',
+      });
     }
   }, []);
 
@@ -247,6 +267,12 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
     setConvertResult(result);
     if (result.valid) {
       setOutput(result.output);
+      trackEvent('convert_success', {
+        input_chars: text.length,
+        output_chars: result.output.length,
+        convert_direction: direction,
+        tool_tab: 'convert',
+      });
       if(direction === 'yaml-to-json') {
           try {
               const validationResult = validateYaml(text);
@@ -266,6 +292,11 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
       setOutput('');
       setOutputView('raw');
       setValidation({ valid: false, errors: [], data: null });
+      trackEvent('convert_error', {
+        input_chars: text.length,
+        convert_direction: direction,
+        tool_tab: 'convert',
+      });
     }
   }, [monaco]);
 
@@ -300,9 +331,18 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
               throw new Error(payload?.error || 'Unable to load remote YAML');
             }
             loadContentIntoEditor(payload.content, `Loaded remote YAML from ${new URL(remoteUrl).hostname}`);
+            trackEvent('load_url_success', {
+              source_host: new URL(remoteUrl).hostname,
+              input_chars: payload.content.length,
+            });
           })
           .catch((error) => {
             setStatusMessage(error instanceof Error ? error.message : 'Unable to load remote YAML');
+            trackEvent('load_url_error', {
+              source_host: (() => {
+                try { return new URL(remoteUrl).hostname; } catch { return 'invalid_url'; }
+              })(),
+            });
             setTimeout(() => setStatusMessage(''), 3200);
           })
           .finally(() => setIsLoadingRemote(false));
@@ -333,6 +373,9 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
   const { isDragging, handleDragEnter, handleDragLeave, handleDragOver, handleDrop } = useDragAndDrop(
     (content) => {
       loadContentIntoEditor(content, 'File loaded into editor');
+      trackEvent('drag_file_loaded', {
+        input_chars: content.length,
+      });
     },
     () => {
       setStatusMessage('Drop a .yaml, .yml, or .json file');
@@ -358,6 +401,10 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
       const content = loadEvent.target?.result;
       if (typeof content === 'string') {
         loadContentIntoEditor(content, `Opened ${file.name}`);
+        trackEvent('open_file_loaded', {
+          input_chars: content.length,
+          file_extension: file.name.split('.').pop()?.toLowerCase() || 'unknown',
+        });
       }
     };
     reader.onerror = () => {
@@ -374,6 +421,10 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
     await navigator.clipboard.writeText(shareUrl.toString());
     window.history.replaceState(null, '', shareUrl.toString());
     setLinkCopied(true);
+    trackEvent('copy_link', {
+      input_chars: input.length,
+      tool_tab: activeTab,
+    });
     setStatusMessage('Share link copied to clipboard');
     setTimeout(() => {
       setLinkCopied(false);
@@ -385,6 +436,11 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
     if (!output) return;
     await navigator.clipboard.writeText(output);
     setCopied(true);
+    trackEvent('copy_output', {
+      output_chars: output.length,
+      tool_tab: activeTab,
+      output_view: outputView,
+    });
     setStatusMessage('Output copied to clipboard');
     setTimeout(() => {
       setCopied(false);
@@ -403,6 +459,11 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
     if (activeTab === 'validate') a.download = 'validation-result.json';
     a.click();
     URL.revokeObjectURL(url);
+    trackEvent('download_output', {
+      output_chars: output.length,
+      tool_tab: activeTab,
+      file_name: a.download,
+    });
     setStatusMessage(`Downloaded ${a.download}`);
     setTimeout(() => setStatusMessage(''), 1800);
   };
@@ -669,7 +730,15 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
                     {(['raw', 'tree'] as OutputView[]).map((view) => (
                       <button
                         key={view}
-                        onClick={() => setOutputView(view)}
+                        onClick={() => {
+                          setOutputView(view);
+                          if (view === 'tree') {
+                            trackEvent('tree_view_click', {
+                              input_chars: input.length,
+                              output_chars: output.length,
+                            });
+                          }
+                        }}
                         className={`rounded px-2 py-0.5 text-[11px] font-medium transition-all ${
                           outputView === view ? activeTabBg : inactiveTabBg
                         }`}
