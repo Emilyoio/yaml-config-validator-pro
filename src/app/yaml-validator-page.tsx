@@ -31,6 +31,7 @@ import {
 type ToolTab = 'validate' | 'format' | 'convert';
 type ConvertDirection = 'yaml-to-json' | 'json-to-yaml';
 type OutputView = 'raw' | 'tree';
+type ProcessingReason = 'initial' | 'input' | 'tab_change' | 'direction_change' | 'file_load' | 'shared_link' | 'remote_url';
 
 type MonacoEditorRef = {
   getModel: () => unknown;
@@ -127,7 +128,7 @@ interface YamlValidatorPageProps {
 }
 
 // Debounce hook to prevent editor freeze on rapid typing
-function useDebouncedCallback<T extends (text: string, tab: ToolTab, direction: ConvertDirection) => void>(
+function useDebouncedCallback<T extends (text: string, tab: ToolTab, direction: ConvertDirection, reason: ProcessingReason) => void>(
   callback: T,
   delay: number
 ) {
@@ -142,12 +143,12 @@ function useDebouncedCallback<T extends (text: string, tab: ToolTab, direction: 
   }, []);
 
   return useCallback(
-    (text: string, tab: ToolTab, direction: ConvertDirection) => {
+    (text: string, tab: ToolTab, direction: ConvertDirection, reason: ProcessingReason) => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
       timerRef.current = setTimeout(() => {
-        callback(text, tab, direction);
+        callback(text, tab, direction, reason);
       }, delay);
     },
     [callback, delay]
@@ -174,6 +175,10 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
   const hasLoadedSharedInputRef = useRef(false);
   const lastValidationEventRef = useRef<string | null>(null);
   const [monaco, setMonaco] = useState<MonacoApiRef | null>(null);
+  const previousTabRef = useRef<ToolTab>(activeTab);
+  const previousDirectionRef = useRef<ConvertDirection>(convertDirection);
+  const previousInputRef = useRef(input);
+  const hasProcessedInitialInputRef = useRef(false);
 
   const inputMode: EditorMode = activeTab === 'convert' && convertDirection === 'json-to-yaml' ? 'json' : 'yaml';
   const outputMode: EditorMode = activeTab === 'convert' && convertDirection === 'yaml-to-json' ? 'json' : 'yaml';
@@ -216,17 +221,18 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
   }, []);
 
   // Live processing functions
-  const runValidation = useCallback((text: string) => {
+  const runValidation = useCallback((text: string, reason: ProcessingReason) => {
     const result = validateYaml(text);
     setValidation(result);
     applyValidationMarkers(result);
-    const eventKey = `validate:${result.valid}:${result.errors[0]?.message ?? ''}:${text.length}`;
+    const eventKey = `validate:${reason}:${result.valid}:${result.errors[0]?.message ?? ''}:${text.length}`;
     if (text.trim() && lastValidationEventRef.current !== eventKey) {
       lastValidationEventRef.current = eventKey;
-      trackEvent(result.valid ? 'validate_success' : 'validate_error', {
+      trackEvent(result.valid ? 'auto_validate_success' : 'auto_validate_error', {
         input_chars: text.length,
         error_count: result.valid ? 0 : result.errors.length,
         tool_tab: 'validate',
+        source: reason,
       });
     }
     if (result.valid && result.data !== null && result.data !== undefined) {
@@ -236,26 +242,28 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
     }
   }, [applyValidationMarkers]);
 
-  const runFormat = useCallback((text: string) => {
+  const runFormat = useCallback((text: string, reason: ProcessingReason) => {
     const result = formatYaml(text);
     setFormatResult(result);
     if (result.valid) {
       setOutput(result.formatted);
-      trackEvent('format_success', {
+      trackEvent('auto_format_success', {
         input_chars: text.length,
         output_chars: result.formatted.length,
         tool_tab: 'format',
+        source: reason,
       });
     } else {
       setOutput('');
-      trackEvent('format_error', {
+      trackEvent('auto_format_error', {
         input_chars: text.length,
         tool_tab: 'format',
+        source: reason,
       });
     }
   }, []);
 
-  const runConvert = useCallback((text: string, direction: ConvertDirection) => {
+  const runConvert = useCallback((text: string, direction: ConvertDirection, reason: ProcessingReason) => {
     if (monaco && editorRef.current) {
       const model = editorRef.current.getModel();
       if (model) monaco.editor.setModelMarkers(model, 'yaml-validator', []);
@@ -267,11 +275,12 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
     setConvertResult(result);
     if (result.valid) {
       setOutput(result.output);
-      trackEvent('convert_success', {
+      trackEvent('auto_convert_success', {
         input_chars: text.length,
         output_chars: result.output.length,
         convert_direction: direction,
         tool_tab: 'convert',
+        source: reason,
       });
       if(direction === 'yaml-to-json') {
           try {
@@ -292,18 +301,19 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
       setOutput('');
       setOutputView('raw');
       setValidation({ valid: false, errors: [], data: null });
-      trackEvent('convert_error', {
+      trackEvent('auto_convert_error', {
         input_chars: text.length,
         convert_direction: direction,
         tool_tab: 'convert',
+        source: reason,
       });
     }
   }, [monaco]);
 
-  const processInput = useCallback((text: string, tab: ToolTab, direction: ConvertDirection) => {
-    if (tab === 'validate') runValidation(text);
-    if (tab === 'format') runFormat(text);
-    if (tab === 'convert') runConvert(text, direction);
+  const processInput = useCallback((text: string, tab: ToolTab, direction: ConvertDirection, reason: ProcessingReason) => {
+    if (tab === 'validate') runValidation(text, reason);
+    if (tab === 'format') runFormat(text, reason);
+    if (tab === 'convert') runConvert(text, direction, reason);
   }, [runValidation, runFormat, runConvert]);
 
   // Debounced live update to prevent editor freeze
@@ -357,18 +367,37 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
     return () => window.clearTimeout(id);
   }, [loadContentIntoEditor]);
 
-  // Immediate update on tab/direction change
+  // Process editor content once per meaningful source change, and tag analytics source explicitly.
   useEffect(() => {
-    const id = setTimeout(() => {
-      processInput(input, activeTab, convertDirection);
-    }, 0);
-    return () => clearTimeout(id);
-  }, [activeTab, convertDirection, processInput, input]);
+    const previousTab = previousTabRef.current;
+    const previousDirection = previousDirectionRef.current;
+    const previousInput = previousInputRef.current;
+    const isInitial = !hasProcessedInitialInputRef.current;
 
-  // Live render on input change (debounced)
-  useEffect(() => {
-    debouncedUpdate(input, activeTab, convertDirection);
-  }, [input, activeTab, convertDirection, debouncedUpdate]);
+    previousTabRef.current = activeTab;
+    previousDirectionRef.current = convertDirection;
+    previousInputRef.current = input;
+    hasProcessedInitialInputRef.current = true;
+
+    if (isInitial) {
+      processInput(input, activeTab, convertDirection, 'initial');
+      return;
+    }
+
+    if (previousTab !== activeTab) {
+      processInput(input, activeTab, convertDirection, 'tab_change');
+      return;
+    }
+
+    if (previousDirection !== convertDirection) {
+      processInput(input, activeTab, convertDirection, 'direction_change');
+      return;
+    }
+
+    if (previousInput !== input) {
+      debouncedUpdate(input, activeTab, convertDirection, 'input');
+    }
+  }, [input, activeTab, convertDirection, processInput, debouncedUpdate]);
 
   const { isDragging, handleDragEnter, handleDragLeave, handleDragOver, handleDrop } = useDragAndDrop(
     (content) => {
