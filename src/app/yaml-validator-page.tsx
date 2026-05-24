@@ -334,24 +334,28 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
       if (remoteUrl) {
         setIsLoadingRemote(true);
         setStatusMessage('Loading YAML from URL...');
-        fetch(`/api/load-url?url=${encodeURIComponent(remoteUrl)}`)
+        fetch(`/api/load-url/?url=${encodeURIComponent(remoteUrl)}`)
           .then(async (response) => {
             const payload = await response.json().catch(() => null);
             if (!response.ok || !payload?.content) {
               throw new Error(payload?.error || 'Unable to load remote YAML');
             }
             loadContentIntoEditor(payload.content, `Loaded remote YAML from ${new URL(remoteUrl).hostname}`);
-            trackEvent('load_url_success', {
+            trackEvent('manual_load_url_success', {
               source_host: new URL(remoteUrl).hostname,
               input_chars: payload.content.length,
+              source: 'remote_url',
+              tool_tab: 'validate',
             });
           })
           .catch((error) => {
             setStatusMessage(error instanceof Error ? error.message : 'Unable to load remote YAML');
-            trackEvent('load_url_error', {
+            trackEvent('manual_load_url_error', {
               source_host: (() => {
                 try { return new URL(remoteUrl).hostname; } catch { return 'invalid_url'; }
               })(),
+              source: 'remote_url',
+              tool_tab: 'validate',
             });
             setTimeout(() => setStatusMessage(''), 3200);
           })
@@ -361,6 +365,11 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
 
       if (yamlHash) {
         loadContentIntoEditor(yamlHash, 'Loaded YAML from shared link');
+        trackEvent('manual_shared_link_loaded', {
+          input_chars: yamlHash.length,
+          source: 'shared_link',
+          tool_tab: 'validate',
+        });
       }
     }, 0);
 
@@ -402,8 +411,10 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
   const { isDragging, handleDragEnter, handleDragLeave, handleDragOver, handleDrop } = useDragAndDrop(
     (content) => {
       loadContentIntoEditor(content, 'File loaded into editor');
-      trackEvent('drag_file_loaded', {
+      trackEvent('manual_drag_file_loaded', {
         input_chars: content.length,
+        source: 'file_load',
+        tool_tab: activeTab,
       });
     },
     () => {
@@ -413,6 +424,10 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
   );
 
   const handleOpenFile = () => {
+    trackEvent('manual_open_file_click', {
+      tool_tab: activeTab,
+      source: 'toolbar',
+    });
     fileInputRef.current?.click();
   };
 
@@ -430,9 +445,11 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
       const content = loadEvent.target?.result;
       if (typeof content === 'string') {
         loadContentIntoEditor(content, `Opened ${file.name}`);
-        trackEvent('open_file_loaded', {
+        trackEvent('manual_open_file_loaded', {
           input_chars: content.length,
           file_extension: file.name.split('.').pop()?.toLowerCase() || 'unknown',
+          source: 'file_load',
+          tool_tab: activeTab,
         });
       }
     };
@@ -450,9 +467,10 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
     await navigator.clipboard.writeText(shareUrl.toString());
     window.history.replaceState(null, '', shareUrl.toString());
     setLinkCopied(true);
-    trackEvent('copy_link', {
+    trackEvent('manual_copy_link_click', {
       input_chars: input.length,
       tool_tab: activeTab,
+      source: 'toolbar',
     });
     setStatusMessage('Share link copied to clipboard');
     setTimeout(() => {
@@ -465,10 +483,11 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
     if (!output) return;
     await navigator.clipboard.writeText(output);
     setCopied(true);
-    trackEvent('copy_output', {
+    trackEvent('manual_copy_output_click', {
       output_chars: output.length,
       tool_tab: activeTab,
       output_view: outputView,
+      source: 'toolbar',
     });
     setStatusMessage('Output copied to clipboard');
     setTimeout(() => {
@@ -488,16 +507,22 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
     if (activeTab === 'validate') a.download = 'validation-result.json';
     a.click();
     URL.revokeObjectURL(url);
-    trackEvent('download_output', {
+    trackEvent('manual_download_output_click', {
       output_chars: output.length,
       tool_tab: activeTab,
       file_name: a.download,
+      source: 'toolbar',
     });
     setStatusMessage(`Downloaded ${a.download}`);
     setTimeout(() => setStatusMessage(''), 1800);
   };
 
   const handleReset = () => {
+    trackEvent('manual_reset_click', {
+      input_chars: input.length,
+      tool_tab: activeTab,
+      source: 'toolbar',
+    });
     setInput('');
     editorRef.current?.setValue('');
     setOutput('');
@@ -578,7 +603,14 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
               {(['validate', 'format', 'convert'] as ToolTab[]).map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => {
+                    trackEvent('manual_tab_switch_click', {
+                      from_tab: activeTab,
+                      to_tab: tab,
+                      source: 'toolbar',
+                    });
+                    setActiveTab(tab);
+                  }}
                   className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
                     activeTab === tab ? activeTabBg : inactiveTabBg
                   }`}
@@ -610,7 +642,15 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
             {activeTab === 'convert' && (
               <div className={`flex items-center rounded-lg border p-0.5 ${isDark ? 'border-[#30363d] bg-[#161b22]' : 'border-gray-200 bg-white'}`}>
                 <button
-                  onClick={() => setConvertDirection('yaml-to-json')}
+                  onClick={() => {
+                    trackEvent('manual_convert_direction_click', {
+                      from_direction: convertDirection,
+                      to_direction: 'yaml-to-json',
+                      tool_tab: 'convert',
+                      source: 'toolbar',
+                    });
+                    setConvertDirection('yaml-to-json');
+                  }}
                   className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-200 ${
                     convertDirection === 'yaml-to-json'
                       ? activeTabBg
@@ -620,7 +660,15 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
                   YAML → JSON
                 </button>
                 <button
-                  onClick={() => setConvertDirection('json-to-yaml')}
+                  onClick={() => {
+                    trackEvent('manual_convert_direction_click', {
+                      from_direction: convertDirection,
+                      to_direction: 'json-to-yaml',
+                      tool_tab: 'convert',
+                      source: 'toolbar',
+                    });
+                    setConvertDirection('json-to-yaml');
+                  }}
                   className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-200 ${
                     convertDirection === 'json-to-yaml'
                       ? activeTabBg
@@ -762,9 +810,11 @@ export default function YamlValidatorPage({ defaultScenario }: YamlValidatorPage
                         onClick={() => {
                           setOutputView(view);
                           if (view === 'tree') {
-                            trackEvent('tree_view_click', {
+                            trackEvent('manual_tree_view_click', {
                               input_chars: input.length,
                               output_chars: output.length,
+                              tool_tab: activeTab,
+                              source: 'output_view_toggle',
                             });
                           }
                         }}
