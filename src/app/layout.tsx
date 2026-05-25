@@ -114,6 +114,21 @@ export default function RootLayout({
             });
           `}
         </Script>
+        <Script
+          src="https://plausible.shipsolo.io/js/pa-qq15hDgOjoYTfUS5DAnXZ.js"
+          strategy="afterInteractive"
+        />
+        <Script id="plausible-analytics" strategy="afterInteractive">
+          {`
+            window.plausible = window.plausible || function(){
+              (window.plausible.q = window.plausible.q || []).push(arguments);
+            };
+            window.plausible.init = window.plausible.init || function(i){
+              window.plausible.o = i || {};
+            };
+            window.plausible.init();
+          `}
+        </Script>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
