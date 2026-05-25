@@ -1,4 +1,4 @@
-type ScenarioKey = 'kubernetes' | 'docker-compose' | 'github-actions';
+type ScenarioKey = 'kubernetes' | 'docker-compose' | 'github-actions' | 'helm-values';
 
 type ScenarioContent = {
   eyebrow: string;
@@ -146,6 +146,52 @@ const CONTENT: Record<ScenarioKey, ScenarioContent> = {
       {
         q: 'Can I paste workflows with secrets references?',
         a: 'The tool runs in your browser and does not upload content. Still, avoid pasting real secret values; use GitHub secrets references instead.',
+      },
+    ],
+  },
+  'helm-values': {
+    eyebrow: 'Helm values YAML checker',
+    title: 'Check values.yaml syntax before Helm templates fail',
+    intro:
+      'Helm values files are plain YAML, but one misplaced indent can break a chart render, CI release, or environment override. Use this page to validate values.yaml syntax, inspect parsed structure, and clean formatting before running helm lint, helm template, or a GitOps deploy.',
+    checks: [
+      'values.yaml files for Helm charts, subcharts, and environment overlays',
+      'Nested image, service, ingress, resources, tolerations, affinity, and extraEnv blocks',
+      'Generated or merged values files before helm template, helm lint, or CI release jobs',
+      'YAML to JSON conversion for reviewing parsed values without uploading chart content',
+    ],
+    mistakes: [
+      {
+        title: 'Indentation drift inside nested values',
+        body: 'A values file often nests maps three or four levels deep. Validate the YAML first so a misplaced service, ingress, or resources block is caught before Helm renders confusing output.',
+      },
+      {
+        title: 'Lists under extraEnv, tolerations, or hosts',
+        body: 'Helm values frequently mix maps and arrays. Tree View helps confirm that list items, host rules, and container environment variables parsed at the level you intended.',
+      },
+      {
+        title: 'Generated values from CI or templating scripts',
+        body: 'When a release job combines base and environment overrides, paste the generated YAML here to catch syntax and structure issues before running helm template.',
+      },
+    ],
+    workflow: [
+      'Paste values.yaml, a rendered values fragment, or generated YAML into the editor.',
+      'Validate syntax and fix any line or column errors before invoking Helm.',
+      'Use Tree View or YAML to JSON conversion to inspect parsed maps and arrays.',
+      'Format and copy the cleaned YAML back into your chart or release pipeline.',
+    ],
+    faqs: [
+      {
+        q: 'Does this run helm lint or render templates?',
+        a: 'No. This page validates YAML syntax and parsed structure only. Run helm lint or helm template for chart rendering, Go template, and Kubernetes semantic checks.',
+      },
+      {
+        q: 'Can I validate rendered Helm output here?',
+        a: 'Yes. Paste rendered YAML from helm template to catch syntax and indentation errors before applying it, but still use Kubernetes validation for API schema rules.',
+      },
+      {
+        q: 'Are chart values uploaded to a server?',
+        a: 'Core validation, formatting, conversion, and Tree View run in your browser. Avoid pasting real secrets; use placeholders or secret references for sensitive values.',
       },
     ],
   },

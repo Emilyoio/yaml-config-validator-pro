@@ -20,6 +20,12 @@ export default function Footer() {
           {/* Links */}
           <div className="flex items-center gap-6">
             <a
+              href="/validator/helm-values/"
+              className="text-xs text-[#8b949e] transition-colors hover:text-[#c9d1d9]"
+            >
+              Helm Values
+            </a>
+            <a
               href="/privacy/"
               className="text-xs text-[#8b949e] transition-colors hover:text-[#c9d1d9]"
             >

@@ -107,6 +107,41 @@ services:
 volumes:
   logvolume01: {}
 `,
+
+  'helm-values': `replicaCount: 2
+
+image:
+  repository: ghcr.io/example/catalog-service
+  tag: "1.8.4"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: catalog.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+extraEnv:
+  - name: LOG_LEVEL
+    value: info
+  - name: FEATURE_FLAGS
+    value: "checkout-v2,recommendations"
+`,
   'github-actions': `name: CI
 on: [push, pull_request]
 jobs:
